@@ -1,11 +1,10 @@
-from flask import Flask, request, render_template, send_from_directory, jsonify,send_file
+from flask import Flask, request, render_template, send_from_directory, jsonify, send_file
 import sqlite3
 from PIL import Image
 from flask.wrappers import Request, Response
-from flask import redirect, url_for, send_from_directory
 from Preprocessing import convert_to_image_tensor, invert_image
 import torch
-from Model import SiameseConvNet, distance_metric ,ContrastiveLoss
+from Model import SiameseConvNet, distance_metric, ContrastiveLoss
 from io import BytesIO
 from Denoise import Denoise
 import random
@@ -13,14 +12,14 @@ import json
 import math
 import cv2
 import matplotlib.pyplot as plt
-import numpy as np 
+import numpy as np
 from skimage import img_as_ubyte, io
 from skimage import measure, morphology
 import os
 
-# app = Flask(__name__, static_folder='./frontend/build/static',
-#             template_folder='./frontend/build')
-app=Flask(__name__,static_folder="static")
+app = Flask(__name__, static_folder='./frontend/build/static',
+            template_folder='./frontend/build')
+
 
 def load_model():
     device = torch.device('cpu')
@@ -56,19 +55,19 @@ def extract_signature(source_image):
         An image with the extracted signatures5.
     """
     # read the input image
-    npimg=cv2.fastNlMeansDenoisingColored(source_image, None, 10, 10, 7, 15)
+    npimg = cv2.fastNlMeansDenoisingColored(source_image, None, 10, 10, 7, 15)
     # npimg = source_image.astype(np.uint8)
     # npimg = np.frombuffer(source_image,dtype=np.uint8)
-    
+
     # source_image.convertTo(img_chn,CV_16UC3, 256);
     print(npimg)
     img = npimg
-    img=cv2.fastNlMeansDenoisingColored(img, None, 10, 10, 7, 15)
+    img = cv2.fastNlMeansDenoisingColored(img, None, 10, 10, 7, 15)
     img = cv2.resize(img, (900, 900))
     img = cv2.imdecode(img, cv2.IMREAD_COLOR)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)[1]  # ensure binary
-    plt.imsave('gasd.png',img)
+    plt.imsave('gasd.png', img)
     # connected component analysis by scikit-learn framework
     blobs = img > img.mean()
     blobs_labels = measure.label(blobs, background=1)
@@ -126,12 +125,6 @@ def extract_signature(source_image):
     cv2.imwrite("output.png", img)
     return img
 
-def get_encoded_img(image_path):
-    img = Image.open(image_path, mode='r')
-    img_byte_arr = io.BytesIO()
-    img.save(img_byte_arr, format='PNG')
-    my_encoded_img = base64.encodebytes(img_byte_arr.getvalue()).decode('ascii')
-    return my_encoded_img
 
 def main():
     CREATE_TABLE = """CREATE TABLE IF NOT EXISTS signatures5 (customer_id TEXT PRIMARY KEY,sign1 BLOB)"""
@@ -143,7 +136,7 @@ def main():
     # item = cursor.fetchone()
     # cursor.connection.commit()
     # return item
-    
+
     # DELETE_DATA = """DELETE FROM signatures5"""
     # cursor1 = connect_to_db().cursor()
     # cursor1.execute(DELETE_DATA)
@@ -154,7 +147,8 @@ def main():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    print("hello")
+    return "success"
 
 
 @app.route('/upload', methods=['POST'])
@@ -188,34 +182,34 @@ def verify():
         cursor.execute(CREATE_TABLE)
         cursor.connection.commit()
         cid = """SELECT id FROM signcout9 ORDER BY id DESC """
-        item=cursor.execute(cid)
-        mainid=1
+        item = cursor.execute(cid)
+        mainid = 1
         print("q1")
-        if item :
+        if item:
             print("q2")
             item1 = cursor.fetchone()
 
             # cursor.connection.commit()
-            if item1==None :
-                mainid=1
+            if item1 == None:
+                mainid = 1
                 conn = connect_to_db()
                 cursor = conn.cursor()
                 query = """INSERT INTO signcout9 VALUES(?)"""
-                cursor.execute(query, (1, 
-                                    ))
+                cursor.execute(query, (1,
+                                       ))
                 conn.commit()
                 cursor.close()
-            else :
+            else:
                 print("adadad")
                 print(item1[0])
-                mainid=int(item1[0])+1 
-                print("added",mainid)
+                mainid = int(item1[0])+1
+                print("added", mainid)
                 cursor.close()
                 conn = connect_to_db()
                 cursor = conn.cursor()
                 query = """INSERT INTO signcout9 VALUES(?)"""
-                cursor.execute(query, (mainid, 
-                                    ))
+                cursor.execute(query, (mainid,
+                                       ))
                 conn.commit()
                 cursor.close()
         # test = request.json
@@ -252,22 +246,23 @@ def verify():
         print(os.path)
         # path = r'D:\signature\signature69'
         # directory = r'D:\signature\signature69'
-        # img = cv2.imread(path) 
-        # os.chdir(directory) 
-        # print("Before saving")   
-        # print(os.listdir(directory))   
-        # filename = 'cat.jpg'
-        # cv2.imwrite(filename, img) 
-        # print("After saving")  
+        # img = cv2.imread(path)
+        # os.chdir(directory)
+        # print("Before saving")
         # print(os.listdir(directory))
-        input_image.save( 'static/aaa'+str(customer_id)+'.png')
-        input_image1.save( 'static/bbb'+str(customer_id)+'.png')
-        
+        # filename = 'cat.jpg'
+        # cv2.imwrite(filename, img)
+        # print("After saving")
+        # print(os.listdir(directory))
+        input_image.save('aaa'+str(customer_id)+'.png')
+        input_image1.save('bbb'+str(customer_id)+'.png')
+
         # plt.imsave('abc'+str(customer_id)+'.png', input_image)
         # plt.imsave('xyz'+str(customer_id)+'.png', input_image1)
-        Denoise.test('static/aaa'+str(customer_id)+'.png','static/bbb'+str(customer_id)+'.png')
-        input_image= Image.open('static/aaa'+str(customer_id)+'.png')
-        input_image1= Image.open('static/bbb'+str(customer_id)+'.png')
+        Denoise.test('aaa'+str(customer_id)+'.png',
+                     'bbb'+str(customer_id)+'.png')
+        input_image = Image.open('aaa'+str(customer_id)+'.png')
+        input_image1 = Image.open('bbb'+str(customer_id)+'.png')
         # img1 = extract_signature(request.files['newSignature'])
         # image = cv2.cvtColor(input_image, cv2.COLOR_BGR2HSV)
         # lower = np.array([90, 38, 0])
@@ -313,26 +308,27 @@ def verify():
         #     return jsonify({'error': "uyugy"})
         # anchor_images = [Image.open(BytesIO(x))
         #                  for x in customer_sample_images]
-        anchor_image_tensors = convert_to_image_tensor(invert_image(input_image1)).view(-1, 1, 220, 155)
-                                # for x in anchor_images
+        anchor_image_tensors = convert_to_image_tensor(
+            invert_image(input_image1)).view(-1, 1, 220, 155)
+        # for x in anchor_images
         model = load_model()
 
         mindist = math.inf
         # for anci in anchor_image_tensors:
         f_A, f_X = model.forward(anchor_image_tensors, input_image_tensor)
-        f1=model.forward_once(anchor_image_tensors).detach().numpy()
-        f2=model.forward_once(input_image_tensor).detach().numpy()
-            # plt.imshow(f1)
-            # cv2.imshow('result.png', f1)
+        f1 = model.forward_once(anchor_image_tensors).detach().numpy()
+        f2 = model.forward_once(input_image_tensor).detach().numpy()
+        # plt.imshow(f1)
+        # cv2.imshow('result.png', f1)
         plt.imsave('file1.png', f1)
         plt.imsave('file2.png', f1)
-            # pq=ContrastiveLoss().forward(f1,f2,0.145139)
-            # print("model1",f1)
-            # print("model2",f2)
-        out_arr = np.subtract(f1, f2) 
+        # pq=ContrastiveLoss().forward(f1,f2,0.145139)
+        # print("model1",f1)
+        # print("model2",f2)
+        out_arr = np.subtract(f1, f2)
         plt.imsave('file3.png', out_arr)
-        print ("Output array: ", out_arr)
-            # print("bla",pq)
+        print("Output array: ", out_arr)
+        # print("bla",pq)
         dist = float(distance_metric(f_A, f_X).detach().numpy())
         mindist = min(mindist, dist)
         # return send_file(
@@ -344,56 +340,49 @@ def verify():
         # )
         # os.remove(  'aaa'+str(customer_id)+'.png')
         # os.remove(  'bbb'+str(customer_id)+'.png')
-        matcheddis=mindist*100
-        percen=100-matcheddis
+        matcheddis = mindist*100
+        percen = 100-matcheddis
         print(percen)
         if dist <= 0.145139:  # Threshold obtained using Test.py
-            return jsonify({"match": True, "error": False, "threshold": "%.6f" % (0.145139), "distance": "%.6f" % (mindist),"difference":str(out_arr),'fileid':mainid,'percentage':percen})
-        return jsonify({"match": False, "error": False, "threshold": 0.145139, "distance": round(mindist, 6),"difference":str(out_arr),'fileid':mainid,'percentage':percen})
+            return jsonify({"match": True, "error": False, "threshold": "%.6f" % (0.145139), "distance": "%.6f" % (mindist), "difference": str(out_arr), 'fileid': mainid, 'percentage': percen})
+        return jsonify({"match": False, "error": False, "threshold": 0.145139, "distance": round(mindist, 6), "difference": str(out_arr), 'fileid': mainid, 'percentage': percen})
     except Exception as e:
         print(e)
         return jsonify({"error": True, "adad": str(e)})
 
 
-
 @app.route("/imagedenoise1", methods=['POST'])
 def imagedenoise1():
-      customer_id=request.form['id']
-    #   return redirect(url_for('static', filename='aaa'+str(customer_id)+'.png'), code=301)
-    #   return send_from_directory('js', path)
-    #   return url_for('static', filename='aaa13.png')
-    #   return customer_id 
-    #   img_path = 'aaa'+str(customer_id)+'.png'
-    #   img = get_encoded_img(img_path)
-    #   return img
-    #   input_image= Image.open('aaa'+str(customer_id)+'.png')
-      return send_file(
-        'static/aaa'+str(customer_id)+'.png',
+    customer_id = request.form['id']
+    return send_file(
+        'aaa'+str(customer_id)+'.png',
         as_attachment=True,
-        attachment_filename='static/aaa'+str(customer_id)+'.png',
-        mimetype='image/png,base64',
-        # abcd=jsonify({"match": True, "error": False, "threshold": "%.6f" % (0.145139), "distance": "%.6f" % (mindist)})
-        )
-@app.route("/imagedenoise2", methods=['POST'])
-def imagedenoise2():
-      customer_id=request.form['id']
-    #   img_path = 'aaa'+str(customer_id)+'.png'
-    #   img = get_encoded_img(img_path)
-    #   return img
-      
-      return send_file(
-        'static/bbb'+str(customer_id)+'.png',
-        as_attachment=True,
-        attachment_filename='static/aaa'+str(customer_id)+'.png',
+        attachment_filename='aaa'+str(customer_id)+'.png',
         mimetype='image/jpeg',
         # abcd=jsonify({"match": True, "error": False, "threshold": "%.6f" % (0.145139), "distance": "%.6f" % (mindist)})
-        )
+    )
+
+
+@app.route("/imagedenoise2", methods=['POST'])
+def imagedenoise2():
+    customer_id = request.form['id']
+    return send_file(
+        'bbb'+str(customer_id)+'.png',
+        as_attachment=True,
+        attachment_filename='aaa'+str(customer_id)+'.png',
+        mimetype='image/jpeg',
+        # abcd=jsonify({"match": True, "error": False, "threshold": "%.6f" % (0.145139), "distance": "%.6f" % (mindist)})
+    )
+
+
 @app.route("/deletefile", methods=['POST'])
 def deletef():
-    customer_id=request.form['id']
-    os.remove(  'static/aaa'+str(customer_id)+'.png')
-    os.remove(  'static/bbb'+str(customer_id)+'.png')
+    customer_id = request.form['id']
+    os.remove('aaa'+str(customer_id)+'.png')
+    os.remove('bbb'+str(customer_id)+'.png')
     return "success"
+
+
 @app.route("/manifest.json")
 def manifest():
     return send_from_directory('./frontend/build', 'manifest.json')
